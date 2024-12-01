@@ -20,10 +20,6 @@
     "publish_version" : true,
     "alias" : "${lambdas_alias_name}",
     "logs_expiration" : "${logs_expiration}",
-    "snap_start" : "None",
-    "url_config" : {
-      "auth_type" : "NONE",
-      "invoke_mode" : "BUFFERED"
-    }
+    "snap_start" : "None"
   }
 }
