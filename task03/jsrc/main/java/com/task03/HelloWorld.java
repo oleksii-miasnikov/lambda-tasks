@@ -36,7 +36,7 @@ public class HelloWorld implements RequestHandler<APIGatewayV2HTTPEvent, APIGate
 
 	@Override
 	public APIGatewayV2HTTPResponse handleRequest(APIGatewayV2HTTPEvent requestEvent, Context context) {
-		System.out.println("---Hello from lambda---");
+		System.out.println("-Hello from lambda-");
 		String method = requestEvent.getRequestContext().getHttp().getMethod();
 		String path = requestEvent.getRawPath();
 		System.out.println("Method --> " + method);
