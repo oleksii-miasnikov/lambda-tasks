@@ -1,0 +1,26 @@
+2024-12-01 11:20:00,504 [INFO] USER:Alex project.py:77:generate_project_structure LOG: Project task03 folder has been successfully created.
+2024-12-01 11:20:00,504 [INFO] USER:Alex helper.py:328:timed LOG: Stage project, elapsed time: 0:00:00.010216
+2024-12-01 11:20:20,412 [INFO] USER:Alex s3_resource.py:40:validate_bucket_name LOG: Starting validating bucket name 'syndicate-education-platform-custom-sandbox-artifacts-sbox02'
+2024-12-01 11:20:20,412 [INFO] USER:Alex s3_resource.py:73:validate_bucket_name LOG: Finished validating bucket name 'syndicate-education-platform-custom-sandbox-artifacts-sbox02'
+2024-12-01 11:20:20,414 [INFO] USER:Alex helper.py:514:convert LOG: Stripping course_id:SEP_JAP_5,course_type:stm,student_id:024ba94e,type:student from "," a bit..
+2024-12-01 11:20:20,414 [INFO] USER:Alex helper.py:518:convert LOG: Converting: course_id:SEP_JAP_5,course_type:stm,student_id:024ba94e,type:student to dict..
+2024-12-01 11:20:20,414 [INFO] USER:Alex helper.py:530:convert LOG: Converted to such a dict: {'course_id': 'SEP_JAP_5', 'course_type': 'stm', 'student_id': '024ba94e', 'type': 'student'}
+2024-12-01 11:20:21,287 [WARNING] USER:Alex generator.py:76:generate_configuration_files LOG: The config_path property is not specified. The working directory is used
+2024-12-01 11:20:21,288 [WARNING] USER:Alex generator.py:93:generate_configuration_files LOG: The "project_path" property is not specified. The working directory will be used as a project path. To change the path, edit the syndicate.yml by path C:\WORK\LABA\lambda-tasks\task03\.syndicate-config-learn
+2024-12-01 11:20:21,291 [INFO] USER:Alex generator.py:155:generate_configuration_files LOG: Syndicate initialization has been completed. 
+Set SDCT_CONF:
+Unix: export SDCT_CONF="C:\WORK\LABA\lambda-tasks\task03\.syndicate-config-learn"
+Windows: setx SDCT_CONF C:\WORK\LABA\lambda-tasks\task03\.syndicate-config-learn
+2024-12-01 11:20:21,292 [INFO] USER:Alex helper.py:328:timed LOG: Stage config, elapsed time: 0:00:00.878035
+2024-12-01 11:22:48,282 [INFO] USER:Alex s3_resource.py:40:validate_bucket_name LOG: Starting validating bucket name 'syndicate-education-platform-custom-sandbox-artifacts-sbox02'
+2024-12-01 11:22:48,282 [INFO] USER:Alex s3_resource.py:73:validate_bucket_name LOG: Finished validating bucket name 'syndicate-education-platform-custom-sandbox-artifacts-sbox02'
+2024-12-01 11:22:48,282 [INFO] USER:Alex helper.py:514:convert LOG: Stripping course_id:SEP_JAP_5,course_type:stm,student_id:024ba94e,type:student from "," a bit..
+2024-12-01 11:22:48,282 [INFO] USER:Alex helper.py:518:convert LOG: Converting: course_id:SEP_JAP_5,course_type:stm,student_id:024ba94e,type:student to dict..
+2024-12-01 11:22:48,282 [INFO] USER:Alex helper.py:530:convert LOG: Converted to such a dict: {'course_id': 'SEP_JAP_5', 'course_type': 'stm', 'student_id': '024ba94e', 'type': 'student'}
+2024-12-01 11:22:49,170 [WARNING] USER:Alex generator.py:76:generate_configuration_files LOG: The config_path property is not specified. The working directory is used
+2024-12-01 11:22:49,171 [WARNING] USER:Alex generator.py:93:generate_configuration_files LOG: The "project_path" property is not specified. The working directory will be used as a project path. To change the path, edit the syndicate.yml by path C:\WORK\LABA\lambda-tasks\task03\.syndicate-config-dev
+2024-12-01 11:22:49,174 [INFO] USER:Alex generator.py:155:generate_configuration_files LOG: Syndicate initialization has been completed. 
+Set SDCT_CONF:
+Unix: export SDCT_CONF="C:\WORK\LABA\lambda-tasks\task03\.syndicate-config-dev"
+Windows: setx SDCT_CONF C:\WORK\LABA\lambda-tasks\task03\.syndicate-config-dev
+2024-12-01 11:22:49,175 [INFO] USER:Alex helper.py:328:timed LOG: Stage config, elapsed time: 0:00:00.892341
