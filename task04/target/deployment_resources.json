@@ -23,7 +23,9 @@
       "batch_size" : 123,
       "function_response_types" : [ ]
     } ],
-    "env_variables" : { },
+    "env_variables" : {
+      "region" : "eu-central-1"
+    },
     "tags" : { },
     "publish_version" : true,
     "alias" : "${lambdas_alias_name}",

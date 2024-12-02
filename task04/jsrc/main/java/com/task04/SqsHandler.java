@@ -8,6 +8,8 @@ import com.syndicate.deployment.model.RetentionSetting;
 import com.syndicate.deployment.annotations.events.SqsTriggerEventSource;
 import com.syndicate.deployment.model.ResourceType;
 import com.syndicate.deployment.annotations.resources.DependsOn;
+import com.syndicate.deployment.annotations.environment.EnvironmentVariable;
+import com.syndicate.deployment.annotations.environment.EnvironmentVariables;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -23,6 +25,9 @@ import java.util.Map;
 		targetQueue = "async_queue",
 		batchSize = 123
 )
+@EnvironmentVariables(value = {
+		@EnvironmentVariable(key = "region", value = "eu-central-1")
+})
 @DependsOn(
 		name = "async_queue",
 		resourceType = ResourceType.SQS_QUEUE
