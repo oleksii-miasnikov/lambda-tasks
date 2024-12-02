@@ -21,7 +21,7 @@ import java.util.Map;
 )
 @SqsTriggerEventSource(
 		targetQueue = "async_queue",
-		batchSize = 10
+		batchSize = 123
 )
 @DependsOn(
 		name = "async_queue",
@@ -31,7 +31,6 @@ public class SqsHandler implements RequestHandler<SQSEvent, String> {
 
 	@Override
 	public String handleRequest(SQSEvent event, Context context) {
-
 		try {
 			for (SQSEvent.SQSMessage message : event.getRecords()) {
 				context.getLogger().log("Received SQS message: " + message.getBody());
