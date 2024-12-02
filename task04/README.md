@@ -45,3 +45,33 @@ Lambda feature overview.
 2. action 2
 ...
 
+1. Generate Project:
+
+   syndicate generate project --name task04
+
+2. Generate Config:
+
+
+3. Set up the SDCT_CONF environment variable pointing to the folder with syndicate.yml file
+
+setx SDCT_CONF C:\WORK\LABA\lambda-tasks\task04\.syndicate-config-dev
+
+4. Generate Lambda:
+
+syndicate generate lambda --name sqs_handler --runtime java
+syndicate generate lambda --name sns_handler --runtime java
+
+5. Generate SQS Queue Resource in Meta:
+
+syndicate generate meta sqs_queue --resource_name async_queue --region eu-central-1 --receive_message_wait_time_seconds 20
+
+
+--dead_letter_target_arn arn:aws:sqs:eu-central-1:905418349556:cmtr-024ba94e-dead-letter-queue --max_receive_count 2
+
+syndicate generate meta iam_role --resource_name sqs_handler-role --principal_service lambda --predefined_policies AWSLambdaSQSQueueExecutionRole  --custom_policies lambda-basic-execution
+
+aws sqs send-message --queue-url https://sqs.eu-central-1.amazonaws.com/905418349556/cmtr-024ba94e-async_queue --message-body "Test"
+
+
+
+syndicate generate meta sns_topic --resource_name lambda_topic --region eu-central-1 
