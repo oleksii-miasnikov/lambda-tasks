@@ -63,7 +63,7 @@ syndicate generate lambda --name sns_handler --runtime java
 
 5. Generate SQS Queue Resource in Meta:
 
-syndicate generate meta sqs_queue --resource_name async_queue --region eu-central-1 --receive_message_wait_time_seconds 20
+syndicate generate meta sqs_queue --resource_name async_queue --region eu-central-1 --receive_message_wait_time_seconds 20 --visibility_timeout 300
 
 
 --dead_letter_target_arn arn:aws:sqs:eu-central-1:905418349556:cmtr-024ba94e-dead-letter-queue --max_receive_count 2

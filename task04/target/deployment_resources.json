@@ -1,7 +1,7 @@
 {
   "sqs_handler" : {
     "name" : "sqs_handler",
-    "lambda_path" : "c:\\WORK\\LABA\\lambda-tasks\\task04",
+    "lambda_path" : "D:\\Users\\Oleksii\\IdeaProjects\\lambda-tasks\\task04",
     "version" : "1.0.0",
     "func_name" : "com.task04.SqsHandler",
     "deployment_package" : "task04-1.0.0.jar",
@@ -32,7 +32,7 @@
   },
   "sns_handler" : {
     "name" : "sns_handler",
-    "lambda_path" : "c:\\WORK\\LABA\\lambda-tasks\\task04",
+    "lambda_path" : "D:\\Users\\Oleksii\\IdeaProjects\\lambda-tasks\\task04",
     "version" : "1.0.0",
     "func_name" : "com.task04.SnsHandler",
     "deployment_package" : "task04-1.0.0.jar",
