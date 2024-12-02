@@ -25,9 +25,6 @@ import java.util.Map;
 		targetQueue = "async_queue",
 		batchSize = 123
 )
-@EnvironmentVariables(value = {
-		@EnvironmentVariable(key = "region", value = "eu-central-1")
-})
 @DependsOn(
 		name = "async_queue",
 		resourceType = ResourceType.SQS_QUEUE
