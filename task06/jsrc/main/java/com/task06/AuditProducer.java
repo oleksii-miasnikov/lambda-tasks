@@ -26,16 +26,10 @@ import java.util.Map;
 )
 @DependsOn(
 		name = "Configuration",
-		resourceType = ResourceType.DYNAMODB_STREAM
+		resourceType = ResourceType.DYNAMODB_TABLE
 )
 
 public class AuditProducer implements RequestHandler<DynamodbEvent, Void> {
-
-	private final ObjectMapper objectMapper;
-
-	public AuditProducer() {
-		this.objectMapper = new ObjectMapper();
-	}
 
 	public Void handleRequest(DynamodbEvent dynamodbEvent, Context context) {
 		context.getLogger().log("handleRequest started");
