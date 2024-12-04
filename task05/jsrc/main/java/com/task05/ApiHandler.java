@@ -4,10 +4,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.syndicate.deployment.annotations.lambda.LambdaHandler;
 import com.syndicate.deployment.model.RetentionSetting;
-//import com.syndicate.deployment.annotations.events.DynamoDbTriggerEventSource;
-//import com.syndicate.deployment.annotations.resources.DependsOn;
-//import com.syndicate.deployment.model.ResourceType;
-//import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
@@ -28,23 +24,24 @@ import java.util.UUID;
 	aliasName = "${lambdas_alias_name}",
 	logsExpiration = RetentionSetting.SYNDICATE_ALIASES_SPECIFIED
 )
-//@DynamoDbTriggerEventSource(targetTable = "Events", batchSize = 1)
-//@DependsOn(name = "Events", resourceType = ResourceType.DYNAMODB_TABLE)
 
 public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
-	private static final String TABLE_NAME = "Event";
+	private static final String TABLE_NAME = "cmtr-024ba94e-Events";
 	private final DynamoDbClient dynamoDbClient = DynamoDbClient.create();
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	@Override
 	public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent request, Context context) {
 		try {
+			context.getLogger().log("Incoming request: " + request);
+			context.getLogger().log("Request Body: " + request.getBody());
+
 			// Parse incoming request
 			Map<String, Object> requestBody = objectMapper.readValue(request.getBody(), Map.class);
 			int principalId = (Integer) requestBody.get("principalId");
 			Map<String, Object> content = (Map<String, Object>) requestBody.get("content");
-			System.out.println("Incoming principalId: " + principalId);
+			context.getLogger().log("request received");
 
 			// Create event data
 			String id = UUID.randomUUID().toString();
@@ -55,6 +52,7 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 			item.put("principalId", AttributeValue.builder().n(String.valueOf(principalId)).build());
 			item.put("createdAt", AttributeValue.builder().s(createdAt).build());
 			item.put("body", AttributeValue.builder().m(convertToAttributeValueMap(content)).build());
+			context.getLogger().log("event created");
 
 			// Save to DynamoDB
 			PutItemRequest putItemRequest = PutItemRequest.builder()
@@ -62,6 +60,7 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 					.item(item)
 					.build();
 			dynamoDbClient.putItem(putItemRequest);
+			context.getLogger().log("event saved to the db");
 
 			// Build response
 			Map<String, Object> responseEvent = new HashMap<>();
@@ -69,11 +68,12 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 			responseEvent.put("principalId", principalId);
 			responseEvent.put("createdAt", createdAt);
 			responseEvent.put("body", content);
+			context.getLogger().log("response created");
 
 			APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent();
 			response.setStatusCode(201);
 			response.setBody(objectMapper.writeValueAsString(Map.of("event", responseEvent)));
-
+			context.getLogger().log("handleRequest finished");
 			return response;
 
 		} catch (Exception exception) {
