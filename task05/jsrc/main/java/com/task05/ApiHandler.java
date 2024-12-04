@@ -11,6 +11,7 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import java.time.format.DateTimeFormatter;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,6 +31,9 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 	private static final String TABLE_NAME = "cmtr-024ba94e-Events";
 	private final DynamoDbClient dynamoDbClient = DynamoDbClient.create();
 	private final ObjectMapper objectMapper = new ObjectMapper();
+	private static final String PATTERN_FORMAT = "dd.MM.yyyyTHH:mm:ss.SSSZ";
+	private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(PATTERN_FORMAT);
+			//.withZone(ZoneId.systemDefault());
 
 	@Override
 	public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent request, Context context) {
@@ -45,7 +49,7 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 
 			// Create event data
 			String id = UUID.randomUUID().toString();
-			String createdAt = Instant.now().toString();
+			String createdAt = formatter.format(Instant.now());
 
 			Map<String, AttributeValue> item = new HashMap<>();
 			item.put("id", AttributeValue.builder().s(id).build());
@@ -72,7 +76,9 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 
 			APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent();
 			response.setStatusCode(201);
-			response.setBody(objectMapper.writeValueAsString(Map.of("event", responseEvent)));
+			response.setBody(objectMapper.writeValueAsString(
+					Map.of(Map.of("statusCode", 201),
+							Map.of("event", responseEvent))));
 			context.getLogger().log("handleRequest finished");
 			return response;
 
