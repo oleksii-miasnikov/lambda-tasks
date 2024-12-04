@@ -29,7 +29,7 @@ import java.util.UUID;
 
 public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
-	private static final String TABLE_NAME = "cmtr-024ba94e-Events";
+	private static final String TABLE_NAME = "cmtr-024ba94e-Events-test";
 
 	@Override
 	public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent request, Context context) {
