@@ -26,7 +26,7 @@ import java.util.Map;
 )
 @DependsOn(
 		name = "Configuration",
-		resourceType = ResourceType.DYNAMODB_TABLE
+		resourceType = ResourceType.DYNAMODB_STREAM
 )
 
 public class AuditProducer implements RequestHandler<DynamodbEvent, Void> {
