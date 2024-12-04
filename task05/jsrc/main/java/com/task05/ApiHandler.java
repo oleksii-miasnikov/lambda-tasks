@@ -11,11 +11,12 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.Instant;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.time.Instant;
 import java.util.UUID;
 
 @LambdaHandler(
@@ -29,15 +30,12 @@ import java.util.UUID;
 public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
 	private static final String TABLE_NAME = "cmtr-024ba94e-Events";
-	private final DynamoDbClient dynamoDbClient = DynamoDbClient.create();
-	private final ObjectMapper objectMapper = new ObjectMapper();
-	private static final String PATTERN_FORMAT = "dd.MM.yyyyTHH:mm:ss.SSSZ";
-	private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(PATTERN_FORMAT);
-			//.withZone(ZoneId.systemDefault());
 
 	@Override
 	public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent request, Context context) {
 		try {
+			ObjectMapper objectMapper = new ObjectMapper();
+
 			context.getLogger().log("Incoming request: " + request);
 			context.getLogger().log("Request Body: " + request.getBody());
 
@@ -48,8 +46,9 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 			context.getLogger().log("request received");
 
 			// Create event data
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+			String createdAt = Instant.now().atZone(ZoneOffset.UTC).format(formatter);
 			String id = UUID.randomUUID().toString();
-			String createdAt = formatter.format(Instant.now());
 
 			Map<String, AttributeValue> item = new HashMap<>();
 			item.put("id", AttributeValue.builder().s(id).build());
@@ -63,10 +62,11 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 					.tableName(TABLE_NAME)
 					.item(item)
 					.build();
+			DynamoDbClient dynamoDbClient = DynamoDbClient.create();
 			dynamoDbClient.putItem(putItemRequest);
 			context.getLogger().log("event saved to the db");
 
-			// Build response
+			// Create response
 			Map<String, Object> responseEvent = new HashMap<>();
 			responseEvent.put("id", id);
 			responseEvent.put("principalId", principalId);
@@ -75,11 +75,12 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 			context.getLogger().log("response created");
 
 			APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent();
-			response.setStatusCode(201);
-			response.setBody(objectMapper.writeValueAsString(
-					Map.of(Map.of("statusCode", 201),
-							Map.of("event", responseEvent))));
+			Map<String, Object> body = new HashMap<>();
+			body.put("event", responseEvent);
+			body.put("statusCode", 201);
+			response.setBody(objectMapper.writeValueAsString(body));
 			context.getLogger().log("handleRequest finished");
+
 			return response;
 
 		} catch (Exception exception) {
