@@ -1,7 +1,7 @@
 {
   "audit_producer" : {
     "name" : "audit_producer",
-    "lambda_path" : "D:\\Users\\Oleksii\\IdeaProjects\\lambda-tasks\\task06",
+    "lambda_path" : "C:\\WORK\\LABA\\lambda-tasks\\task06",
     "version" : "1.0.0",
     "func_name" : "com.task06.AuditProducer",
     "deployment_package" : "task06-1.0.0.jar",
@@ -14,13 +14,13 @@
     "subnet_ids" : [ ],
     "security_group_ids" : [ ],
     "dependencies" : [ {
-      "resource_name" : "Configuration1",
+      "resource_name" : "Configuration",
       "resource_type" : "dynamodb_table"
     } ],
     "event_sources" : [ {
       "resource_type" : "dynamodb_trigger",
-      "target_table" : "Configuration1",
-      "batch_size" : 123
+      "target_table" : "Configuration",
+      "batch_size" : 11
     } ],
     "env_variables" : { },
     "tags" : { },
