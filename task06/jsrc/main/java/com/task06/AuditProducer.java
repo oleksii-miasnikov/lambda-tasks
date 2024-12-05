@@ -38,7 +38,7 @@ import java.util.UUID;
 
 public class AuditProducer implements RequestHandler<DynamodbEvent, Void> {
 
-	private static final String TABLE_NAME = "Audit";
+	private static final String TABLE_NAME = "cmtr-024ba94e-Audit-test";
 	private final AmazonDynamoDB dynamoDbClient = AmazonDynamoDBClientBuilder.defaultClient();
 
 	public Void handleRequest(DynamodbEvent dynamodbEvent, Context context) {
