@@ -29,7 +29,7 @@ import java.util.stream.IntStream;
 )
 public class UuidGenerator implements RequestHandler<Object, String> {
 
-	private static final String BUCKET_NAME = "uuid-storage";
+	private static final String BUCKET_NAME = "cmtr-024ba94e-uuid-storage-test";
 	private final AmazonS3 s3Client = AmazonS3ClientBuilder.defaultClient();
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
