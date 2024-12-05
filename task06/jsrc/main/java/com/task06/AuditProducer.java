@@ -8,7 +8,10 @@ import com.syndicate.deployment.annotations.events.DynamoDbTriggerEventSource;
 import com.syndicate.deployment.annotations.resources.DependsOn;
 import com.syndicate.deployment.model.ResourceType;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
+import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,13 +34,19 @@ import java.util.Map;
 
 public class AuditProducer implements RequestHandler<DynamodbEvent, Void> {
 
+	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+
 	public Void handleRequest(DynamodbEvent dynamodbEvent, Context context) {
 		context.getLogger().log("handleRequest started");
 		context.getLogger().log("dynamodbEvent" + dynamodbEvent);
 		context.getLogger().log("context" + context);
-		for (DynamodbEvent.DynamodbStreamRecord record : dynamodbEvent.getRecords()) {
-			context.getLogger().log("Incoming record: " + record);
-		}
+		dynamodbEvent.getRecords().forEach(this::logDynamoDBRecord);
 		return null;
+	}
+
+	private void logDynamoDBRecord(DynamodbStreamRecord record) {
+		System.out.println(record.getEventID());
+		System.out.println(record.getEventName());
+		System.out.println("DynamoDB Record: " + GSON.toJson(record.getDynamodb()));
 	}
 }
