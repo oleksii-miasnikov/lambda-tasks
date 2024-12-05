@@ -8,6 +8,9 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.syndicate.deployment.annotations.events.RuleEventSource;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+
 
 import java.time.Instant;
 import java.util.Map;
@@ -48,7 +51,8 @@ public class UuidGenerator implements RequestHandler<Object, String> {
 			data.put("ids", uuids);
 
 			// Generate filename with ISO timestamp
-			String timestamp = Instant.now().toString();
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+			String timestamp = Instant.now().atZone(ZoneOffset.UTC).format(formatter);
 			String fileName = timestamp + ".json";
 			context.getLogger().log("fileName: " + fileName);
 
