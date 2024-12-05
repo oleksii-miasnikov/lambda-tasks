@@ -52,8 +52,7 @@ public class UuidGenerator implements RequestHandler<Object, String> {
 
 			// Generate filename with ISO timestamp
 			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-			String timestamp = Instant.now().atZone(ZoneOffset.UTC).format(formatter);
-			String fileName = timestamp + ".json";
+			String fileName = Instant.now().atZone(ZoneOffset.UTC).format(formatter);
 			context.getLogger().log("fileName: " + fileName);
 
 			// Convert to JSON and upload to S3
