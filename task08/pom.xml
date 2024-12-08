@@ -31,6 +31,15 @@
             <artifactId>deployment-configuration-annotations</artifactId>
             <version>${syndicate.java.plugin.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.task08.utils</groupId>
+            <artifactId>weather-forecast</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/weather-forecast-1.0.jar</systemPath>
+        </dependency>
+
     </dependencies>
 
     <build>
