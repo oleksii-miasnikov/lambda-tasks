@@ -8,6 +8,9 @@ import com.syndicate.deployment.model.RetentionSetting;
 import com.syndicate.deployment.model.DeploymentRuntime;
 import com.syndicate.deployment.model.Architecture;
 import com.syndicate.deployment.model.ArtifactExtension;
+import com.syndicate.deployment.annotations.lambda.LambdaUrlConfig;
+import com.syndicate.deployment.model.lambda.url.AuthType;
+import com.syndicate.deployment.model.lambda.url.InvokeMode;
 import com.task08.utils.WeatherForecast;
 
 import java.util.HashMap;
@@ -27,6 +30,10 @@ import java.util.Map;
 		runtime = DeploymentRuntime.JAVA11,
 		architectures = {Architecture.ARM64},
 		artifactExtension = ArtifactExtension.ZIP
+)
+@LambdaUrlConfig(
+		authType = AuthType.NONE,
+		invokeMode = InvokeMode.BUFFERED
 )
 public class ApiHandler implements RequestHandler<Object, String> {
 
