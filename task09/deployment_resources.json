@@ -16,10 +16,7 @@
             "ssm:GetParameter",
             "kms:Decrypt",
             "xray:PutTraceSegments",
-            "xray:PutTelemetryRecords",
-            "logs:CreateLogGroup",
-            "logs:CreateLogStream",
-            "logs:PutLogEvents"
+            "xray:PutTelemetryRecords"
           ],
           "Effect": "Allow",
           "Resource": "*"
