@@ -17,6 +17,7 @@ import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import com.syndicate.deployment.model.TracingMode;
 import com.task08.utils.WeatherForecast;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -43,22 +44,32 @@ import java.util.UUID;
 		invokeMode = InvokeMode.BUFFERED
 )
 
-public class Processor implements RequestHandler<Object, String> {
+public class Processor implements RequestHandler<Object, Map<String, AttributeValue>> {
 
 	private static final String URL = "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current=temperature_2m,wind_speed_10m&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m";
 	private static final String TABLE_NAME = "cmtr-024ba94e-Weather-test";
 
-	public String handleRequest(Object request, Context context) {
-		System.out.println("Hello from lambda");
+	public Map<String, AttributeValue> handleRequest(Object request, Context context) {
+		context.getLogger().log("Hello from lambda");
 		WeatherForecast weatherForecast = new WeatherForecast();
 		String forecast = weatherForecast.getWeatherForecast(URL);
-		System.out.println("Weather forecast:" + forecast);
+		context.getLogger().log("Weather forecast:" + forecast);
+
+		//Convert string to map
+		ObjectMapper objectMapper = new ObjectMapper();
+		Map<String, AttributeValue> map =  new HashMap<>();
+		try {
+			map = objectMapper.readValue(forecast, Map.class);
+			System.out.println(map);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 		// Create forecast data
 		String id = UUID.randomUUID().toString();
 		Map<String, AttributeValue> item = new HashMap<>();
 		item.put("id", AttributeValue.builder().s(id).build());
-		item.put("forecast", AttributeValue.builder().s(forecast).build());
+		item.put("forecast", AttributeValue.builder().m(map).build());
 		context.getLogger().log("forecast created");
 
 		// Save to DynamoDB
@@ -70,7 +81,7 @@ public class Processor implements RequestHandler<Object, String> {
 		dynamoDbClient.putItem(putItemRequest);
 		context.getLogger().log("event saved to the db");
 
-		return forecast;
+		return map;
 	}
 }
 

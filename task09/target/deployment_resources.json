@@ -1,7 +1,7 @@
 {
   "processor" : {
     "name" : "processor",
-    "lambda_path" : "C:\\WORK\\LABA\\lambda-tasks\\task09",
+    "lambda_path" : "D:\\Users\\Oleksii\\IdeaProjects\\lambda-tasks\\task09",
     "version" : "1.0.0",
     "func_name" : "com.task09.Processor",
     "deployment_package" : "task09-1.0.0.jar",
