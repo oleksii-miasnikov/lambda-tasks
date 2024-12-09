@@ -21,7 +21,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @LambdaHandler(
     lambdaName = "processor",
@@ -44,33 +46,23 @@ import java.util.UUID;
 		invokeMode = InvokeMode.BUFFERED
 )
 
-public class Processor implements RequestHandler<Object, Map<String, Object>> {
+public class Processor implements RequestHandler<Object, String> {
 
 	private static final String URL = "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current=temperature_2m,wind_speed_10m&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m";
 	private static final String TABLE_NAME = "cmtr-024ba94e-Weather-test";
 
-	public Map<String, Object> handleRequest(Object request, Context context) {
+	public String handleRequest(Object request, Context context) {
 		context.getLogger().log("Hello from lambda");
 		WeatherForecast weatherForecast = new WeatherForecast();
-		String forecast = weatherForecast.getWeatherForecast(URL);
-		context.getLogger().log("Weather forecast:" + forecast);
-
-		//Convert string to map
-		ObjectMapper objectMapper = new ObjectMapper();
-		Map<String, Object> map =  new HashMap<>();
-		try {
-			map = objectMapper.readValue(forecast, Map.class);
-			System.out.println(map);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		String forecastStr = weatherForecast.getWeatherForecast(URL);
+		context.getLogger().log("Weather forecast:" + forecastStr);
 
 		// Create forecast data
 		String id = UUID.randomUUID().toString();
 		Map<String, AttributeValue> item = new HashMap<>();
 		item.put("id", AttributeValue.builder().s(id).build());
-		item.put("forecast", AttributeValue.builder().m(convertToAttributeValueMap(map)).build());
-		context.getLogger().log("forecast created");
+		item.put("forecast", AttributeValue.builder().m(convertToAttributeValueMap(forecastStr)).build());
+		context.getLogger().log("forecast created : " + item);
 
 		// Save to DynamoDB
 		PutItemRequest putItemRequest = PutItemRequest.builder()
@@ -79,15 +71,49 @@ public class Processor implements RequestHandler<Object, Map<String, Object>> {
 				.build();
 		DynamoDbClient dynamoDbClient = DynamoDbClient.create();
 		dynamoDbClient.putItem(putItemRequest);
-		context.getLogger().log("event saved to the db");
+		context.getLogger().log("forecast saved to the db");
 
-		return map;
+		return forecastStr;
 	}
 
-	private Map<String, AttributeValue> convertToAttributeValueMap(Map<String, Object> content) {
+	private Map<String, AttributeValue> convertToAttributeValueMap(String jsonString) {
+
 		Map<String, AttributeValue> attributeValueMap = new HashMap<>();
-		for (Map.Entry<String, Object> entry : content.entrySet()) {
-			attributeValueMap.put(entry.getKey(), AttributeValue.builder().s(entry.getValue().toString()).build());
+
+		ObjectMapper objectMapper = new ObjectMapper();
+		Forecast weatherData = new Forecast();
+		try {
+			weatherData = objectMapper.readValue(jsonString, Forecast.class);
+
+			// Add simple fields
+			attributeValueMap.put("elevation", AttributeValue.builder().n(String.valueOf(weatherData.elevation)).build());
+			attributeValueMap.put("generationtime_ms", AttributeValue.builder().n(String.valueOf(weatherData.generationtime_ms)).build());
+			attributeValueMap.put("latitude", AttributeValue.builder().n(String.valueOf(weatherData.latitude)).build());
+			attributeValueMap.put("longitude", AttributeValue.builder().n(String.valueOf(weatherData.longitude)).build());
+			attributeValueMap.put("timezone", AttributeValue.builder().s(weatherData.timezone).build());
+			attributeValueMap.put("timezone_abbreviation", AttributeValue.builder().s(weatherData.timezone_abbreviation).build());
+			attributeValueMap.put("utc_offset_seconds", AttributeValue.builder().n(String.valueOf(weatherData.utc_offset_seconds)).build());
+
+			// Add nested "hourly" fields
+			Map<String, AttributeValue> hourly = new HashMap<>();
+			List<AttributeValue> hourlyTemps = weatherData.hourly.temperature_2m.stream()
+					.map(temp -> AttributeValue.builder().n(String.valueOf(temp)).build())
+					.collect(Collectors.toList());
+			List<AttributeValue> hourlyTimes = weatherData.hourly.time.stream()
+					.map(temp -> AttributeValue.builder().s(String.valueOf(temp)).build())
+					.collect(Collectors.toList());
+			hourly.put("temperature_2m", AttributeValue.builder().l(hourlyTemps).build());
+			hourly.put("time", AttributeValue.builder().l(hourlyTimes).build());
+			attributeValueMap.put("hourly", AttributeValue.builder().m(hourly).build());
+
+			hourly.put("temperature_2m", AttributeValue.builder().s(weatherData.hourlyUnits.temperature_2m).build());
+			hourly.put("time", AttributeValue.builder().s(weatherData.hourlyUnits.time).build());
+			attributeValueMap.put("hourly_units", AttributeValue.builder().m(hourly).build());
+
+			return attributeValueMap;
+
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 		return attributeValueMap;
 	}
