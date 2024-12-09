@@ -44,12 +44,12 @@ import java.util.UUID;
 		invokeMode = InvokeMode.BUFFERED
 )
 
-public class Processor implements RequestHandler<Object, Map<String, AttributeValue>> {
+public class Processor implements RequestHandler<Object, Map<String, Object>> {
 
 	private static final String URL = "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current=temperature_2m,wind_speed_10m&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m";
 	private static final String TABLE_NAME = "cmtr-024ba94e-Weather-test";
 
-	public Map<String, AttributeValue> handleRequest(Object request, Context context) {
+	public Map<String, Object> handleRequest(Object request, Context context) {
 		context.getLogger().log("Hello from lambda");
 		WeatherForecast weatherForecast = new WeatherForecast();
 		String forecast = weatherForecast.getWeatherForecast(URL);
@@ -57,7 +57,7 @@ public class Processor implements RequestHandler<Object, Map<String, AttributeVa
 
 		//Convert string to map
 		ObjectMapper objectMapper = new ObjectMapper();
-		Map<String, AttributeValue> map =  new HashMap<>();
+		Map<String, Object> map =  new HashMap<>();
 		try {
 			map = objectMapper.readValue(forecast, Map.class);
 			System.out.println(map);
@@ -69,7 +69,7 @@ public class Processor implements RequestHandler<Object, Map<String, AttributeVa
 		String id = UUID.randomUUID().toString();
 		Map<String, AttributeValue> item = new HashMap<>();
 		item.put("id", AttributeValue.builder().s(id).build());
-		item.put("forecast", AttributeValue.builder().m(map).build());
+		item.put("forecast", AttributeValue.builder().m(convertToAttributeValueMap(map)).build());
 		context.getLogger().log("forecast created");
 
 		// Save to DynamoDB
@@ -82,6 +82,14 @@ public class Processor implements RequestHandler<Object, Map<String, AttributeVa
 		context.getLogger().log("event saved to the db");
 
 		return map;
+	}
+
+	private Map<String, AttributeValue> convertToAttributeValueMap(Map<String, Object> content) {
+		Map<String, AttributeValue> attributeValueMap = new HashMap<>();
+		for (Map.Entry<String, Object> entry : content.entrySet()) {
+			attributeValueMap.put(entry.getKey(), AttributeValue.builder().s(entry.getValue().toString()).build());
+		}
+		return attributeValueMap;
 	}
 }
 
