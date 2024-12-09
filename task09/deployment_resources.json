@@ -14,7 +14,12 @@
             "dynamodb:DeleteItem",
             "ssm:PutParameter",
             "ssm:GetParameter",
-            "kms:Decrypt"
+            "kms:Decrypt",
+            "xray:PutTraceSegments",
+            "xray:PutTelemetryRecords",
+            "logs:CreateLogGroup",
+            "logs:CreateLogStream",
+            "logs:PutLogEvents"
           ],
           "Effect": "Allow",
           "Resource": "*"
