@@ -80,7 +80,7 @@
     ],
     "resources": {
       "/signin": {
-        "enable_cors": true,
+        "enable_cors": false,
         "POST": {
           "authorization_type": "NONE",
           "integration_type": "lambda",
@@ -95,7 +95,7 @@
         }
       },
       "/signup": {
-        "enable_cors": true,
+        "enable_cors": false,
         "POST": {
           "authorization_type": "NONE",
           "integration_type": "lambda",
@@ -139,7 +139,7 @@
       "/reservations": {
         "enable_cors": true,
         "GET": {
-          "authorization_type": "authorizer",
+          "authorization_type": "task10_api_authorizer",
           "integration_type": "lambda",
           "lambda_name": "api_handler",
           "enable_proxy": true,
@@ -151,7 +151,7 @@
           "default_error_pattern": true
         },
         "POST": {
-          "authorization_type": "authorizer",
+          "authorization_type": "task10_api_authorizer",
           "integration_type": "lambda",
           "lambda_name": "api_handler",
           "enable_proxy": true,
