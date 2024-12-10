@@ -10,6 +10,12 @@ import com.syndicate.deployment.annotations.environment.EnvironmentVariable;
 import com.syndicate.deployment.annotations.environment.EnvironmentVariables;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreateUserRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreateUserResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.CognitoIdentityProviderException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,16 +39,48 @@ booking_userpool: simple-booking-userpool
 @DependsOn(resourceType = ResourceType.COGNITO_USER_POOL, name = "${booking_userpool}")
 @EnvironmentVariables(value = {
 		@EnvironmentVariable(key = "REGION", value = "${region}"),
-		@EnvironmentVariable(key = "COGNITO_ID", value = "${pool_name}", valueTransformer = USER_POOL_NAME_TO_USER_POOL_ID),
-		@EnvironmentVariable(key = "CLIENT_ID", value = "${pool_name}", valueTransformer = USER_POOL_NAME_TO_CLIENT_ID)
+		@EnvironmentVariable(key = "COGNITO_ID", value = "${booking_userpool}", valueTransformer = USER_POOL_NAME_TO_USER_POOL_ID),
+		@EnvironmentVariable(key = "CLIENT_ID", value = "${booking_userpool}", valueTransformer = USER_POOL_NAME_TO_CLIENT_ID)
 })
-public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
+public class ApiHandler implements RequestHandler<Map<String, Object>, Map<String, Object>> {
 
-	@Override
-	public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent requestEvent, Context context) {
+	private final CognitoIdentityProviderClient cognitoClient = CognitoIdentityProviderClient.create();
+	private final String userPoolId = System.getenv("COGNITO_ID");
+
+	public Map<String, Object> handleRequest(Map<String, Object> requestEvent, Context context) {
+		Map<String, Object> response = new HashMap<>();
+
 		context.getLogger().log("handleRequest started");
-		context.getLogger().log("requestEvent: " + requestEvent);
-		context.getLogger().log("context: " + context);
-		return null;
+		context.getLogger().log("COGNITO_ID: " + System.getenv("COGNITO_ID"));
+		context.getLogger().log("CLIENT_ID: " + System.getenv("CLIENT_ID"));
+
+		String firstName = (String) requestEvent.get("firstName");
+		String lastName = (String) requestEvent.get("lastName");
+		String email = (String) requestEvent.get("email");
+		String password = (String) requestEvent.get("password");
+
+		context.getLogger().log("data: " + firstName + ", " + lastName + ", " + email + ", " + password);
+
+
+		AdminCreateUserRequest request = AdminCreateUserRequest.builder()
+				.userPoolId(userPoolId)
+				.username(email)
+				.temporaryPassword(password)
+				.messageAction("SUPPRESS")
+				.userAttributes(
+						AttributeType.builder().name("email").value(email).build(),
+						AttributeType.builder().name("given_name").value(firstName).build(),
+						AttributeType.builder().name("family_name").value(lastName).build()
+				)
+				.build();
+
+		// Create the user
+		AdminCreateUserResponse createUserResponse = cognitoClient.adminCreateUser(request);
+
+		// Build success response
+		response.put("statusCode", 200);
+		response.put("body", "User created successfully: " + createUserResponse.user().username());
+
+		return response;
 	}
 }

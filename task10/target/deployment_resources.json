@@ -1,7 +1,7 @@
 {
   "api_handler" : {
     "name" : "api_handler",
-    "lambda_path" : "D:\\Users\\Oleksii\\IdeaProjects\\lambda-tasks\\task10",
+    "lambda_path" : "C:\\WORK\\LABA\\lambda-tasks\\task10",
     "version" : "1.0.0",
     "func_name" : "com.task10.ApiHandler",
     "deployment_package" : "task10-1.0.0.jar",
@@ -20,14 +20,14 @@
     "event_sources" : [ ],
     "env_variables" : {
       "CLIENT_ID" : {
+        "parameter" : "client_id",
         "resource_type" : "cognito_idp",
-        "resource_name" : "${pool_name}",
-        "parameter" : "client_id"
+        "resource_name" : "${booking_userpool}"
       },
       "COGNITO_ID" : {
+        "parameter" : "id",
         "resource_type" : "cognito_idp",
-        "resource_name" : "${pool_name}",
-        "parameter" : "id"
+        "resource_name" : "${booking_userpool}"
       },
       "REGION" : "${region}"
     },
