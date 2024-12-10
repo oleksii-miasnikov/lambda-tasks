@@ -16,8 +16,6 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.CognitoIdentityProviderException;
-//import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
-//import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminInitiateAuthRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminInitiateAuthResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthFlowType;
@@ -75,25 +73,25 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 			ObjectMapper objectMapper = new ObjectMapper();
 
 			Map<String, Object> requestBody = objectMapper.readValue(body, Map.class);
-			String jsonResponse = "";
+			Map<String, Object> methodResponse =  new HashMap<>();
 
 			if ("/signup".equals(path) && "POST".equals(method)) {
 				context.getLogger().log("/signup POST");
-				jsonResponse = objectMapper.writeValueAsString(signUpHandler(requestBody, context));
+				methodResponse = signUpHandler(requestBody, context);
 			} else if ("/signin".equals(path) && "POST".equals(method)) {
 				context.getLogger().log("/signin POST");
-				jsonResponse = objectMapper.writeValueAsString(signInHandler(requestBody, context));
+				methodResponse = signInHandler(requestBody, context);
 			} else if ("/tables ".equals(path) && "POST".equals(method)) {
 				context.getLogger().log("/tables  POST");
-				jsonResponse = objectMapper.writeValueAsString(tablesPost(requestBody, context));
+				methodResponse = tablesPost(requestBody, context);
 			}
 
 
 			APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent();
-			Map<String, Object> responseBody = new HashMap<>();
-			responseBody.put("event", jsonResponse);
-			responseBody.put("statusCode", 200);
-			response.setBody(objectMapper.writeValueAsString(responseBody));
+			response.setStatusCode((Integer) methodResponse.get("statusCode"));
+			if (methodResponse.get("body") != null) {
+				response.setBody(objectMapper.writeValueAsString(methodResponse.get("body")));
+			}
 			context.getLogger().log("handleRequest finished");
 
 			return response;
@@ -109,38 +107,48 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 	private Map<String, Object> signUpHandler (Map<String, Object> body, Context context){
 
 		context.getLogger().log("signUpHandler started");
-
 		Map<String, Object> response = new HashMap<>();
+
+		// getting fields from request body
 		String firstName = (String) body.get("firstName");
 		String lastName = (String) body.get("lastName");
 		String email = (String) body.get("email");
 		String password = (String) body.get("password");
 
-		AdminCreateUserRequest request = AdminCreateUserRequest.builder()
-				.userPoolId(userPoolId)
-				.username(email)
-				.temporaryPassword(password)
-				.messageAction("SUPPRESS")
-				.userAttributes(
-						AttributeType.builder().name("email").value(email).build(),
-						AttributeType.builder().name("given_name").value(firstName).build(),
-						AttributeType.builder().name("family_name").value(lastName).build()
-				)
-				.build();
+		try {
+			// creating cognito request
+			AdminCreateUserRequest request = AdminCreateUserRequest.builder()
+					.userPoolId(userPoolId)
+					.username(email)
+					.temporaryPassword(password)
+					.messageAction("SUPPRESS")
+					.userAttributes(
+							AttributeType.builder().name("email").value(email).build(),
+							AttributeType.builder().name("given_name").value(firstName).build(),
+							AttributeType.builder().name("family_name").value(lastName).build()
+					)
+					.build();
 
-		AdminCreateUserResponse createUserResponse = cognitoClient.adminCreateUser(request);
+			// creating cognito user
+			AdminCreateUserResponse createUserResponse = cognitoClient.adminCreateUser(request);
 
-		AdminSetUserPasswordRequest setPasswordRequest = AdminSetUserPasswordRequest.builder()
-				.userPoolId(userPoolId)
-				.username(email)
-				.password(password)
-				.permanent(true) // Set password as permanent
-				.build();
+			// setting permanent password
+			AdminSetUserPasswordRequest setPasswordRequest = AdminSetUserPasswordRequest.builder()
+					.userPoolId(userPoolId)
+					.username(email)
+					.password(password)
+					.permanent(true)
+					.build();
 
-		AdminSetUserPasswordResponse setPasswordResponse = cognitoClient.adminSetUserPassword(setPasswordRequest);
+			AdminSetUserPasswordResponse setPasswordResponse = cognitoClient.adminSetUserPassword(setPasswordRequest);
 
-		response.put("statusCode", 200);
-		response.put("body", "User created successfully: " + createUserResponse.user().username());
+			// creating response
+			response.put("statusCode", 200);
+
+		} catch (Exception exception) {
+			response.put("statusCode", 400);
+			response.put("body", exception.getMessage());
+		}
 
 		return response;
 	}
@@ -148,12 +156,14 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 	private Map<String, Object> signInHandler (Map<String, Object> body, Context context){
 
 		context.getLogger().log("signInHandler started");
-		ObjectMapper objectMapper = new ObjectMapper();
 		Map<String, Object> response = new HashMap<>();
+
+		// getting fields from request body
+		ObjectMapper objectMapper = new ObjectMapper();
+		String email = (String) body.get("email");
+		String password = (String) body.get("password");
+
 		try {
-			String email = (String) body.get("email");
-			String password = (String) body.get("password");
-			context.getLogger().log("data: " + email + ", " + password);
 			// Authenticate the user using AdminInitiateAuth
 			AdminInitiateAuthRequest authRequest = AdminInitiateAuthRequest.builder()
 					.userPoolId(userPoolId)
@@ -164,29 +174,26 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 							"PASSWORD", password
 					))
 					.build();
-			context.getLogger().log("authRequest created: " + authRequest);
-			AdminInitiateAuthResponse authResponse = cognitoClient.adminInitiateAuth(authRequest);
 
-			context.getLogger().log("authResponse: " + authResponse);
+			AdminInitiateAuthResponse authResponse = cognitoClient.adminInitiateAuth(authRequest);
 
 			// Extract the access token from the response
 			String accessToken = authResponse.authenticationResult().accessToken();
-
-			context.getLogger().log("accessToken" + accessToken);
 
 			// Return a successful response
 			response.put("statusCode", 200);
 			response.put("body", objectMapper.writeValueAsString(Map.of("accessToken", accessToken)));
 
-		} catch (Exception e) {
+		} catch (Exception exception) {
 			response.put("statusCode", 400);
-			response.put("error", e.getMessage());
+			response.put("body", exception.getMessage());
 		}
 
 		return response;
 	}
 
 	private Map<String, Object> tablesPost (Map<String, Object> body, Context context){
+
 		context.getLogger().log("tablesPost started");
 		ObjectMapper objectMapper = new ObjectMapper();
 		Map<String, Object> response = new HashMap<>();
@@ -198,36 +205,39 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 		String minOrder = (String) body.get("minOrder");
 
 		context.getLogger().log("data: " + id + ", "+ number + ", "+ places + ", "+ isVip + ", "+ minOrder);
+		try {
+			// Create forecast data
+			//String id = UUID.randomUUID().toString();
+			Map<String, AttributeValue> item = new HashMap<>();
+			item.put("id", AttributeValue.builder().n(id).build());
+			item.put("number", AttributeValue.builder().n(number).build());
+			item.put("places", AttributeValue.builder().n(places).build());
+			item.put("isVip", AttributeValue.builder().bool(isVip).build());
 
-		// Create forecast data
-		//String id = UUID.randomUUID().toString();
-		Map<String, AttributeValue> item = new HashMap<>();
-		item.put("id", AttributeValue.builder().n(id).build());
-		item.put("number", AttributeValue.builder().n(number).build());
-		item.put("places", AttributeValue.builder().n(places).build());
-		item.put("isVip", AttributeValue.builder().bool(isVip).build());
+			// Add optional field minOrder if present
+			if (minOrder != null) {
+				item.put("minOrder", AttributeValue.builder().n(String.valueOf(minOrder)).build());
+			}
 
-		// Add optional field minOrder if present
-		if (minOrder != null) {
-			item.put("minOrder", AttributeValue.builder().n(String.valueOf(minOrder)).build());
+
+			context.getLogger().log("table item created : " + item);
+
+			// Save to DynamoDB
+			PutItemRequest putItemRequest = PutItemRequest.builder()
+					.tableName(tableTables)
+					.item(item)
+					.build();
+			DynamoDbClient dynamoDbClient = DynamoDbClient.create();
+			dynamoDbClient.putItem(putItemRequest);
+			context.getLogger().log("forecast saved to the db");
+
+			// Step 4: Build a successful response
+			response.put("statusCode", 200);
+			response.put("body", objectMapper.writeValueAsString(Map.of("id", id)));
+		} catch (Exception exception) {
+			response.put("statusCode", 400);
+			response.put("body", exception.getMessage());
 		}
-
-
-		context.getLogger().log("table item created : " + item);
-
-		// Save to DynamoDB
-		PutItemRequest putItemRequest = PutItemRequest.builder()
-				.tableName(tableTables)
-				.item(item)
-				.build();
-		DynamoDbClient dynamoDbClient = DynamoDbClient.create();
-		dynamoDbClient.putItem(putItemRequest);
-		context.getLogger().log("forecast saved to the db");
-
-		// Step 4: Build a successful response
-		response.put("statusCode", 200);
-		response.put("id", id);
-
 		return response;
 	}
 }
