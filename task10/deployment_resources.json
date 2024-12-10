@@ -112,7 +112,7 @@
       "/tables": {
         "enable_cors": false,
         "GET": {
-          "authorization_type": "task10_api_authorizer",
+          "authorization_type": "authorizer",
           "integration_type": "lambda",
           "lambda_name": "api_handler",
           "enable_proxy": true,
@@ -124,7 +124,7 @@
           "default_error_pattern": true
         },
         "POST": {
-          "authorization_type": "task10_api_authorizer",
+          "authorization_type": "authorizer",
           "integration_type": "lambda",
           "lambda_name": "api_handler",
           "enable_proxy": true,
@@ -137,9 +137,9 @@
         }
       },
       "/reservations": {
-        "enable_cors": true,
+        "enable_cors": false,
         "GET": {
-          "authorization_type": "task10_api_authorizer",
+          "authorization_type": "authorizer",
           "integration_type": "lambda",
           "lambda_name": "api_handler",
           "enable_proxy": true,
@@ -151,7 +151,7 @@
           "default_error_pattern": true
         },
         "POST": {
-          "authorization_type": "task10_api_authorizer",
+          "authorization_type": "authorizer",
           "integration_type": "lambda",
           "lambda_name": "api_handler",
           "enable_proxy": true,

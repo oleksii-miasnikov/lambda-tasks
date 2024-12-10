@@ -1,7 +1,7 @@
 {
   "api_handler" : {
     "name" : "api_handler",
-    "lambda_path" : "C:\\WORK\\LABA\\lambda-tasks\\task10",
+    "lambda_path" : "D:\\Users\\Oleksii\\IdeaProjects\\lambda-tasks\\task10",
     "version" : "1.0.0",
     "func_name" : "com.task10.ApiHandler",
     "deployment_package" : "task10-1.0.0.jar",
