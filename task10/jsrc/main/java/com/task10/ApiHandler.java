@@ -220,7 +220,6 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 		String number = String.valueOf(body.get("number"));
 		String places = String.valueOf(body.get("places"));
 		Boolean isVip = (Boolean) body.get("isVip");
-		String minOrder = String.valueOf(body.get("minOrder"));
 
 		context.getLogger().log("data: " + id + ", "+ number + ", "+ places + ", "+ isVip + ", "+ minOrder);
 		try {
@@ -233,8 +232,8 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 			item.put("isVip", AttributeValue.builder().bool(isVip).build());
 
 			// Add optional field minOrder if present
-			if (minOrder != null) {
-				item.put("minOrder", AttributeValue.builder().n(String.valueOf(minOrder)).build());
+			if (body.get("minOrder") != null) {
+				item.put("minOrder", AttributeValue.builder().n(String.valueOf(String.valueOf(body.get("minOrder")))).build());
 			}
 
 			context.getLogger().log("table item created : " + item);
