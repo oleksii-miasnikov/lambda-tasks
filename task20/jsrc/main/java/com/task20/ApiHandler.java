@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.List;
+import java.util.UUID;
 
 import static com.syndicate.deployment.model.environment.ValueTransformer.USER_POOL_NAME_TO_CLIENT_ID;
 import static com.syndicate.deployment.model.environment.ValueTransformer.USER_POOL_NAME_TO_USER_POOL_ID;
@@ -71,6 +72,7 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 	public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent requestEvent, Context context) {
 
 		context.getLogger().log("handleRequest started");
+		context.getLogger().log("requestEvent --> " + requestEvent);
 		String method = requestEvent.getHttpMethod();
 		String path = requestEvent.getPath();
 		String body = requestEvent.getBody();
@@ -199,7 +201,7 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 
 			// Return a successful response
 			response.put("statusCode", 200);
-			response.put("body", objectMapper.writeValueAsString(Map.of("accessToken", accessToken)));
+			response.put("body", Map.of("accessToken", accessToken));
 
 		} catch (Exception exception) {
 			response.put("statusCode", 400);
@@ -231,7 +233,7 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 			item.put("isVip", AttributeValue.builder().bool(isVip).build());
 
 			// Add optional field minOrder if present
-			if (!minOrder.isEmpty()) {
+			if (minOrder != null) {
 				item.put("minOrder", AttributeValue.builder().n(String.valueOf(minOrder)).build());
 			}
 
@@ -245,11 +247,11 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 					.build();
 
 			dynamoDbClient.putItem(putItemRequest);
-			context.getLogger().log("forecast saved to the db");
+			context.getLogger().log("table item saved to the db");
 
 			// Build a successful response
 			response.put("statusCode", 200);
-			response.put("body", objectMapper.writeValueAsString(Map.of("id", id)));
+			response.put("body", Map.of("id", number));
 		} catch (Exception exception) {
 			response.put("statusCode", 400);
 			response.put("body", exception.getMessage());
@@ -303,14 +305,106 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 	private Map<String, Object> reservationsPostHandler(Map<String, Object> body, Context context){
 
 		context.getLogger().log("reservationsPost started");
+		Map<String, Object> response = new HashMap<>();
+		/*
+		 "tableNumber": // int, number of the table
+         "clientName": //string
+         "phoneNumber": //string
+         "date": // string in yyyy-MM-dd format
+         "slotTimeStart": // string in "HH:MM" format, like "13:00",
+         "slotTimeEnd": // string in "HH:MM" format, like "15:00"
+		 */
 
-		return null;
+		String tableNumber = String.valueOf(body.get("tableNumber"));
+		String clientName = (String) body.get("clientName");
+		String phoneNumber = (String) body.get("phoneNumber");
+		String date = (String) body.get("date");
+		String slotTimeStart = (String) body.get("slotTimeStart");
+		String slotTimeEnd = (String) body.get("slotTimeEnd");
+
+		context.getLogger().log("data: " +
+				tableNumber + ", " +
+				clientName + ", " +
+				phoneNumber + ", " +
+				date + ", " +
+				slotTimeStart + ", " +
+				slotTimeEnd);
+		try {
+			// Create forecast data
+			String id = UUID.randomUUID().toString();
+			Map<String, AttributeValue> item = new HashMap<>();
+			item.put("id", AttributeValue.builder().s(id).build());
+			item.put("tableNumber", AttributeValue.builder().n(tableNumber).build());
+			item.put("clientName", AttributeValue.builder().s(clientName).build());
+			item.put("phoneNumber", AttributeValue.builder().s(phoneNumber).build());
+			item.put("date", AttributeValue.builder().s(date).build());
+			item.put("slotTimeStart", AttributeValue.builder().s(slotTimeStart).build());
+			item.put("slotTimeEnd", AttributeValue.builder().s(slotTimeEnd).build());
+
+			context.getLogger().log("table item created : " + item);
+			context.getLogger().log("table: " + tableTables);
+
+			// Save to DynamoDB
+			PutItemRequest putItemRequest = PutItemRequest.builder()
+					.tableName(tableReservations)
+					.item(item)
+					.build();
+
+			dynamoDbClient.putItem(putItemRequest);
+			context.getLogger().log("table item saved to the db");
+
+			// Build a successful response
+			response.put("statusCode", 200);
+			response.put("body", Map.of("reservationId", id));
+		} catch (Exception exception) {
+			response.put("statusCode", 400);
+			response.put("body", exception.getMessage());
+		}
+		return response;
+
 	}
 
 	private Map<String, Object> reservationsGetHandler(Context context){
 
 		context.getLogger().log("reservationsGet started");
 
-		return null;
+		Map<String, Object> response = new HashMap<>();
+
+		try {
+			// Scan the DynamoDB table
+			ScanRequest scanRequest = ScanRequest.builder()
+					.tableName(tableReservations)
+					.build();
+
+			ScanResponse scanResponse = dynamoDbClient.scan(scanRequest);
+			context.getLogger().log("scanResponse " + scanResponse);
+
+			// Build the response JSON
+			List<Map<String, Object>> items = new ArrayList<>();
+
+			for (Map<String, AttributeValue> item : scanResponse.items()) {
+				Map<String, Object> tableRecord = new HashMap<>();
+				tableRecord.put("id", item.get("id").s());
+				tableRecord.put("tableNumber", Integer.parseInt(item.get("tableNumber").n()));
+				tableRecord.put("clientName", item.get("clientName").s());
+				tableRecord.put("phoneNumber", item.get("phoneNumber").s());
+				tableRecord.put("date", item.get("date").s());
+				tableRecord.put("slotTimeStart", item.get("slotTimeStart").s());
+				tableRecord.put("slotTimeEnd", item.get("slotTimeEnd").s());
+
+				context.getLogger().log("tableRecord " + tableRecord);
+				items.add(tableRecord);
+			}
+
+			response.put("statusCode", 200);
+			response.put("body", Map.of("reservations", items));
+
+		} catch (Exception exception) {
+			response.put("statusCode", 400);
+			context.getLogger().log("exception " + exception);
+			response.put("body", exception.getMessage());
+		}
+		return response;
+
 	}
 }

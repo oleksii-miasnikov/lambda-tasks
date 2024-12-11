@@ -197,7 +197,7 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 			AdminInitiateAuthResponse authResponse = cognitoClient.adminInitiateAuth(authRequest);
 
 			// Extract the access token from the response
-			String accessToken = authResponse.authenticationResult().accessToken();
+			String accessToken = authResponse.authenticationResult().idToken();
 
 			// Return a successful response
 			response.put("statusCode", 200);
