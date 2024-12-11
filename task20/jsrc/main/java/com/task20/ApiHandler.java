@@ -231,7 +231,7 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 			item.put("isVip", AttributeValue.builder().bool(isVip).build());
 
 			// Add optional field minOrder if present
-			if (minOrder.isEmpty()) {
+			if (!minOrder.isEmpty()) {
 				item.put("minOrder", AttributeValue.builder().n(String.valueOf(minOrder)).build());
 			}
 

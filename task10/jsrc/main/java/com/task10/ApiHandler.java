@@ -24,9 +24,14 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminSetUse
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
+import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 
 import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Map;
+import java.util.List;
 
 import static com.syndicate.deployment.model.environment.ValueTransformer.USER_POOL_NAME_TO_CLIENT_ID;
 import static com.syndicate.deployment.model.environment.ValueTransformer.USER_POOL_NAME_TO_USER_POOL_ID;
@@ -38,15 +43,17 @@ reservations_table: Reservations
 booking_userpool: simple-booking-userpool
  */
 @LambdaHandler(
-    lambdaName = "api_handler",
-	roleName = "api_handler-role",
-	isPublishVersion = true,
-	aliasName = "${lambdas_alias_name}",
-	logsExpiration = RetentionSetting.SYNDICATE_ALIASES_SPECIFIED
+		lambdaName = "api_handler",
+		roleName = "api_handler-role",
+		isPublishVersion = true,
+		aliasName = "${lambdas_alias_name}",
+		logsExpiration = RetentionSetting.SYNDICATE_ALIASES_SPECIFIED
 )
 @DependsOn(resourceType = ResourceType.COGNITO_USER_POOL, name = "${booking_userpool}")
 @EnvironmentVariables(value = {
 		@EnvironmentVariable(key = "REGION", value = "${region}"),
+		@EnvironmentVariable(key = "TABLES_TABLE", value = "${tables_table}"),
+		@EnvironmentVariable(key = "RESERVATIONS_TABLE", value = "${reservations_table}"),
 		@EnvironmentVariable(key = "COGNITO_ID", value = "${booking_userpool}", valueTransformer = USER_POOL_NAME_TO_USER_POOL_ID),
 		@EnvironmentVariable(key = "CLIENT_ID", value = "${booking_userpool}", valueTransformer = USER_POOL_NAME_TO_CLIENT_ID)
 })
@@ -55,8 +62,10 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 	private final CognitoIdentityProviderClient cognitoClient = CognitoIdentityProviderClient.create();
 	private final String userPoolId = System.getenv("COGNITO_ID");
 	private final String clientId = System.getenv("CLIENT_ID");
-	private final String tableReservations = System.getenv("reservations_table");
-	private final String tableTables = System.getenv("tables_table");
+	private final String tableReservations = System.getenv("RESERVATIONS_TABLE");
+	private final String tableTables = System.getenv("TABLES_TABLE");
+	private final DynamoDbClient dynamoDbClient = DynamoDbClient.create();
+	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	@Override
 	public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent requestEvent, Context context) {
@@ -70,22 +79,31 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 		context.getLogger().log("body --> " + body);
 
 		try {
-			ObjectMapper objectMapper = new ObjectMapper();
-
-			Map<String, Object> requestBody = objectMapper.readValue(body, Map.class);
 			Map<String, Object> methodResponse =  new HashMap<>();
 
-			if ("/signup".equals(path) && "POST".equals(method)) {
-				context.getLogger().log("/signup POST");
-				methodResponse = signUpHandler(requestBody, context);
-			} else if ("/signin".equals(path) && "POST".equals(method)) {
-				context.getLogger().log("/signin POST");
-				methodResponse = signInHandler(requestBody, context);
-			} else if ("/tables ".equals(path) && "POST".equals(method)) {
-				context.getLogger().log("/tables  POST");
-				methodResponse = tablesPost(requestBody, context);
-			}
+			if ("/reservations".equals(path) && "GET".equals(method)) {
+				context.getLogger().log("/reservations GET");
+				methodResponse = reservationsGetHandler(context);
+			} else if ("/tables".equals(path) && "GET".equals(method)) {
+				context.getLogger().log("/tables GET");
+				methodResponse = tablesGetHandler(context);
+			} else {
+				Map<String, Object> requestBody = objectMapper.readValue(body, Map.class);
 
+				if ("/signup".equals(path) && "POST".equals(method)) {
+					context.getLogger().log("/signup POST");
+					methodResponse = signUpHandler(requestBody, context);
+				} else if ("/signin".equals(path) && "POST".equals(method)) {
+					context.getLogger().log("/signin POST");
+					methodResponse = signInHandler(requestBody, context);
+				} else if ("/tables".equals(path) && "POST".equals(method)) {
+					context.getLogger().log("/tables POST");
+					methodResponse = tablesPostHandler(requestBody, context);
+				}  else if ("/reservations".equals(path) && "POST".equals(method)) {
+					context.getLogger().log("/reservations POST");
+					methodResponse = reservationsPostHandler(requestBody, context);
+				}
+			}
 
 			APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent();
 			response.setStatusCode((Integer) methodResponse.get("statusCode"));
@@ -104,7 +122,7 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 		}
 	}
 
-	private Map<String, Object> signUpHandler (Map<String, Object> body, Context context){
+	private Map<String, Object> signUpHandler(Map<String, Object> body, Context context){
 
 		context.getLogger().log("signUpHandler started");
 		Map<String, Object> response = new HashMap<>();
@@ -153,13 +171,12 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 		return response;
 	}
 
-	private Map<String, Object> signInHandler (Map<String, Object> body, Context context){
+	private Map<String, Object> signInHandler(Map<String, Object> body, Context context){
 
 		context.getLogger().log("signInHandler started");
 		Map<String, Object> response = new HashMap<>();
 
 		// getting fields from request body
-		ObjectMapper objectMapper = new ObjectMapper();
 		String email = (String) body.get("email");
 		String password = (String) body.get("password");
 
@@ -182,7 +199,7 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 
 			// Return a successful response
 			response.put("statusCode", 200);
-			response.put("body", objectMapper.writeValueAsString(Map.of("accessToken", accessToken)));
+			response.put("body", Map.of("accessToken", accessToken));
 
 		} catch (Exception exception) {
 			response.put("statusCode", 400);
@@ -192,52 +209,108 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 		return response;
 	}
 
-	private Map<String, Object> tablesPost (Map<String, Object> body, Context context){
+	private Map<String, Object> tablesPostHandler(Map<String, Object> body, Context context){
 
 		context.getLogger().log("tablesPost started");
-		ObjectMapper objectMapper = new ObjectMapper();
 		Map<String, Object> response = new HashMap<>();
 
-		String id = (String) body.get("id");
-		String number = (String) body.get("number");
-		String places = (String) body.get("places");
+		String id = String.valueOf(body.get("id"));
+		String number = String.valueOf(body.get("number"));
+		String places = String.valueOf(body.get("places"));
 		Boolean isVip = (Boolean) body.get("isVip");
-		String minOrder = (String) body.get("minOrder");
+		String minOrder = String.valueOf(body.get("minOrder"));
 
 		context.getLogger().log("data: " + id + ", "+ number + ", "+ places + ", "+ isVip + ", "+ minOrder);
 		try {
 			// Create forecast data
 			//String id = UUID.randomUUID().toString();
 			Map<String, AttributeValue> item = new HashMap<>();
-			item.put("id", AttributeValue.builder().n(id).build());
+			item.put("id", AttributeValue.builder().s(String.valueOf(id)).build());
 			item.put("number", AttributeValue.builder().n(number).build());
 			item.put("places", AttributeValue.builder().n(places).build());
 			item.put("isVip", AttributeValue.builder().bool(isVip).build());
 
 			// Add optional field minOrder if present
-			if (minOrder != null) {
+			if (!minOrder.isEmpty()) {
 				item.put("minOrder", AttributeValue.builder().n(String.valueOf(minOrder)).build());
 			}
 
-
 			context.getLogger().log("table item created : " + item);
+			context.getLogger().log("table: " + tableTables);
 
 			// Save to DynamoDB
 			PutItemRequest putItemRequest = PutItemRequest.builder()
 					.tableName(tableTables)
 					.item(item)
 					.build();
-			DynamoDbClient dynamoDbClient = DynamoDbClient.create();
+
 			dynamoDbClient.putItem(putItemRequest);
 			context.getLogger().log("forecast saved to the db");
 
-			// Step 4: Build a successful response
+			// Build a successful response
 			response.put("statusCode", 200);
-			response.put("body", objectMapper.writeValueAsString(Map.of("id", id)));
+			response.put("body", Map.of("id", id));
 		} catch (Exception exception) {
 			response.put("statusCode", 400);
 			response.put("body", exception.getMessage());
 		}
 		return response;
+	}
+
+	private Map<String, Object> tablesGetHandler(Context context){
+
+		context.getLogger().log("tablesGet started");
+
+		Map<String, Object> response = new HashMap<>();
+
+		try {
+			// Scan the DynamoDB table
+			ScanRequest scanRequest = ScanRequest.builder()
+					.tableName(tableTables)
+					.build();
+
+			ScanResponse scanResponse = dynamoDbClient.scan(scanRequest);
+			context.getLogger().log("scanResponse " + scanResponse);
+
+			// Build the response JSON
+			List<Map<String, Object>> items = new ArrayList<>();
+
+			for (Map<String, AttributeValue> item : scanResponse.items()) {
+				Map<String, Object> tableRecord = new HashMap<>();
+				tableRecord.put("id", Integer.parseInt(item.get("id").s()));
+				tableRecord.put("number", Integer.parseInt(item.get("number").n()));
+				tableRecord.put("places", Integer.parseInt(item.get("places").n()));
+				tableRecord.put("isVip", Boolean.parseBoolean(item.get("isVip").bool().toString()));
+
+				if (item.containsKey("minOrder")) {
+					tableRecord.put("minOrder", Integer.parseInt(item.get("minOrder").n()));
+				}
+				context.getLogger().log("tableRecord " + tableRecord);
+				items.add(tableRecord);
+			}
+
+			response.put("statusCode", 200);
+			response.put("body", items);
+
+		} catch (Exception exception) {
+			response.put("statusCode", 400);
+			context.getLogger().log("exception " + exception);
+			response.put("body", exception.getMessage());
+		}
+		return response;
+	}
+
+	private Map<String, Object> reservationsPostHandler(Map<String, Object> body, Context context){
+
+		context.getLogger().log("reservationsPost started");
+
+		return null;
+	}
+
+	private Map<String, Object> reservationsGetHandler(Context context){
+
+		context.getLogger().log("reservationsGet started");
+
+		return null;
 	}
 }
