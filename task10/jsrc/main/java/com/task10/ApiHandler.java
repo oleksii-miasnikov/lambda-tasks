@@ -221,7 +221,6 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 		String places = String.valueOf(body.get("places"));
 		Boolean isVip = (Boolean) body.get("isVip");
 
-		context.getLogger().log("data: " + id + ", "+ number + ", "+ places + ", "+ isVip + ", "+ minOrder);
 		try {
 			// Create forecast data
 			//String id = UUID.randomUUID().toString();
