@@ -28,6 +28,8 @@ import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
+import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -265,7 +267,6 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 		Map<String, Object> response = new HashMap<>();
 
 		try {
-			// Scan the DynamoDB table
 			ScanRequest scanRequest = ScanRequest.builder()
 					.tableName(tableTables)
 					.build();
@@ -286,19 +287,44 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 				if (item.containsKey("minOrder")) {
 					tableRecord.put("minOrder", Integer.parseInt(item.get("minOrder").n()));
 				}
+
 				context.getLogger().log("tableRecord " + tableRecord);
 				items.add(tableRecord);
 			}
-
 			response.put("statusCode", 200);
 			response.put("body", Map.of("tables", items));
 
 		} catch (Exception exception) {
 			response.put("statusCode", 400);
-			context.getLogger().log("exception " + exception);
+			context.getLogger().log("exception " + exception.getMessage());
 			response.put("body", exception.getMessage());
 		}
 		return response;
+	}
+
+	private void tablesGetById(String tableNumber, Context context) throws Exception{
+
+		context.getLogger().log("tablesGetById started. tableNumber: " + tableNumber);
+
+		ScanRequest scanRequest = ScanRequest.builder()
+				.tableName(tableTables)
+				.filterExpression("#numberAttr = :tableNumber")
+				.expressionAttributeNames(Map.of("#numberAttr", "number"))
+				.expressionAttributeValues(Map.of(":tableNumber", AttributeValue.builder().n(tableNumber).build()))
+				.build();
+
+		context.getLogger().log("scanRequest: " + scanRequest);
+
+		ScanResponse scanResponse = dynamoDbClient.scan(scanRequest);
+
+		context.getLogger().log("scanResponse: " + scanResponse);
+
+		if(scanResponse.items().isEmpty()) {
+			context.getLogger().log("Table №" + tableNumber + " is absent.");
+			throw new Exception("Table №" + tableNumber + " is absent.");
+		}
+
+		context.getLogger().log("Table №" + tableNumber + " is present.");
 	}
 
 	private Map<String, Object> reservationsPostHandler(Map<String, Object> body, Context context){
@@ -322,7 +348,10 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 				slotTimeEnd);
 		try {
 
+			tablesGetById(tableNumber, context);
+
 			conflictReservations(tableNumber, date, slotTimeStart, slotTimeEnd, context);
+
 			// Create forecast data
 			String id = UUID.randomUUID().toString();
 			Map<String, AttributeValue> item = new HashMap<>();
