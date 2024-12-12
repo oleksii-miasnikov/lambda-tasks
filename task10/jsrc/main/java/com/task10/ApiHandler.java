@@ -249,7 +249,7 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 
 			// Build a successful response
 			response.put("statusCode", 200);
-			response.put("body", Map.of("id", number));
+			response.put("body", Map.of("id", id));
 		} catch (Exception exception) {
 			response.put("statusCode", 400);
 			response.put("body", exception.getMessage());
