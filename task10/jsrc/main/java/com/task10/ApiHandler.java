@@ -249,7 +249,7 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 
 			// Build a successful response
 			response.put("statusCode", 200);
-			response.put("body", Map.of("id", id));
+			response.put("body", Map.of("id",Integer.parseInt(id)));
 		} catch (Exception exception) {
 			response.put("statusCode", 400);
 			response.put("body", exception.getMessage());
@@ -382,7 +382,7 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 
 			for (Map<String, AttributeValue> item : scanResponse.items()) {
 				Map<String, Object> tableRecord = new HashMap<>();
-				tableRecord.put("id", item.get("id").s());
+//				tableRecord.put("id", item.get("id").s());
 				tableRecord.put("tableNumber", Integer.parseInt(item.get("tableNumber").n()));
 				tableRecord.put("clientName", item.get("clientName").s());
 				tableRecord.put("phoneNumber", item.get("phoneNumber").s());
