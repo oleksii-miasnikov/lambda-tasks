@@ -1,10 +1,10 @@
 {
   "api_handler" : {
     "name" : "api_handler",
-    "lambda_path" : "C:\\WORK\\LABA\\lambda-tasks\\task11",
+    "lambda_path" : "D:\\Users\\Oleksii\\IdeaProjects\\lambda-tasks\\task11",
     "version" : "1.0.0",
-    "func_name" : "com.task10.ApiHandler",
-    "deployment_package" : "task10-1.0.0.jar",
+    "func_name" : "com.task11.ApiHandler",
+    "deployment_package" : "task11-1.0.0.jar",
     "resource_type" : "lambda",
     "runtime" : "java11",
     "architectures" : [ "x86_64" ],
