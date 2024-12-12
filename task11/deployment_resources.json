@@ -69,7 +69,7 @@
     },
     "tags": {}
   },
-  "task10_api": {
+  "task11_api": {
     "resource_type": "api_gateway",
     "deploy_stage": "api",
     "authorizers": {
@@ -90,7 +90,7 @@
     ],
     "resources": {
       "/signin": {
-        "enable_cors": false,
+        "enable_cors": true,
         "POST": {
           "authorization_type": "NONE",
           "integration_type": "lambda",

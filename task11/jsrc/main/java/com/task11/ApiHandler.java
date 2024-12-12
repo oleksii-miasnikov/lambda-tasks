@@ -115,6 +115,12 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 			}
 
 			APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent();
+			Map<String, String> headers = new HashMap<>();
+			headers.put("Access-Control-Allow-Headers", "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token");
+			headers.put("Access-Control-Allow-Origin", "*");
+			headers.put("Access-Control-Allow-Methods", "*");
+			headers.put("Accept-Version", "*");
+			response.setHeaders(headers);
 			response.setStatusCode((Integer) methodResponse.get("statusCode"));
 			if (methodResponse.get("body") != null) {
 				response.setBody(objectMapper.writeValueAsString(methodResponse.get("body")));
