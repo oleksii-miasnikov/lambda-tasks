@@ -92,6 +92,10 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 			} else if ("/tables".equals(path) && "GET".equals(method)) {
 				context.getLogger().log("/tables GET");
 				methodResponse = tablesGetHandler(context);
+			} else if (path.contains("/tables/") && "GET".equals(method)) {
+				String tableId = path.substring(8);
+				context.getLogger().log("/tables/" + tableId + "GET");
+				methodResponse = getTableByTableId(tableId, context);
 			} else {
 				Map<String, Object> requestBody = objectMapper.readValue(body, Map.class);
 
@@ -300,6 +304,48 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 			response.put("body", exception.getMessage());
 		}
 		return response;
+	}
+
+	private Map<String, Object> getTableByTableId(String tableId, Context context) {
+		context.getLogger().log("getTableByTableId started");
+
+		Map<String, Object> response = new HashMap<>();
+
+		GetItemRequest getItemRequest = GetItemRequest.builder()
+				.tableName(tableTables)
+				.key(Map.of("id", AttributeValue.builder().s(tableId).build()))
+				.build();
+
+		context.getLogger().log("getItemRequest " + getItemRequest);
+
+		try {
+			GetItemResponse getItemResponse = dynamoDbClient.getItem(getItemRequest);
+
+			context.getLogger().log("getItemResponse " + getItemResponse);
+
+			Map<String, AttributeValue> item = getItemResponse.item();
+
+			Map<String, Object> tableRecord = new HashMap<>();
+			tableRecord.put("id", Integer.parseInt(item.get("id").s()));
+			tableRecord.put("number", Integer.parseInt(item.get("number").n()));
+			tableRecord.put("places", Integer.parseInt(item.get("places").n()));
+			tableRecord.put("isVip", Boolean.parseBoolean(item.get("isVip").bool().toString()));
+
+			if (item.containsKey("minOrder")) {
+				tableRecord.put("minOrder", Integer.parseInt(item.get("minOrder").n()));
+			}
+
+			context.getLogger().log("tableRecord " + tableRecord);
+			response.put("statusCode", 200);
+			response.put("body", tableRecord);
+
+		} catch (Exception exception) {
+			response.put("statusCode", 400);
+			context.getLogger().log("exception " + exception.getMessage());
+			response.put("body", exception.getMessage());
+		}
+		return response;
+
 	}
 
 	private void tablesGetById(String tableNumber, Context context) throws Exception{
