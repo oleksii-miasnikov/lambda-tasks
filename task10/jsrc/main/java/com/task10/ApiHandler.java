@@ -21,16 +21,17 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminInitia
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AuthFlowType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminSetUserPasswordRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminSetUserPasswordResponse;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
+import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 
 import java.util.HashMap;
-import java.util.ArrayList;
 import java.util.Map;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -320,6 +321,8 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 				slotTimeStart + ", " +
 				slotTimeEnd);
 		try {
+
+			conflictReservations(tableNumber, date, slotTimeStart, slotTimeEnd, context);
 			// Create forecast data
 			String id = UUID.randomUUID().toString();
 			Map<String, AttributeValue> item = new HashMap<>();
@@ -353,6 +356,68 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 		return response;
 
 	}
+
+	private void conflictReservations(String tableNumber, String date, String slotTimeStart, String slotTimeEnd, Context context) throws Exception {
+		context.getLogger().log("conflictReservations");
+
+		// Query DynamoDB for existing reservations with the same tableNumber and date
+		Map<String, AttributeValue> expressionValues = new HashMap<>();
+		expressionValues.put(":tableNumber", AttributeValue.builder().n(String.valueOf(tableNumber)).build());
+		expressionValues.put(":date", AttributeValue.builder().s(date).build());
+
+		ScanRequest scanRequest = ScanRequest.builder()
+				.tableName(tableReservations)
+				.filterExpression("tableNumber = :tableNumber AND #dateAttr = :date")
+				.expressionAttributeValues(Map.of(
+						":tableNumber", AttributeValue.builder().n(String.valueOf(tableNumber)).build(),
+						":date", AttributeValue.builder().s(date).build()
+				))
+				.expressionAttributeNames(Map.of("#dateAttr", "date")) // Handle reserved keyword
+				.build();
+
+		context.getLogger().log("scanRequest: " + scanRequest);
+
+		ScanResponse scanResponse = dynamoDbClient.scan(scanRequest);
+
+		context.getLogger().log("scanResponse: " + scanResponse);
+
+		List<Map<String, AttributeValue>> existingReservations = scanResponse.items();
+
+		context.getLogger().log("existingReservations: " + existingReservations);
+
+		for (Map<String, AttributeValue> reservation : existingReservations) {
+			String existingSlotStart = reservation.get("slotTimeStart").s();
+			String existingSlotEnd = reservation.get("slotTimeEnd").s();
+
+			if (isTimeConflict(slotTimeStart, slotTimeEnd, existingSlotStart, existingSlotEnd, context)) {
+				context.getLogger().log("Conflict detected");
+				throw new Exception("Conflict detected");
+			}
+		}
+		context.getLogger().log("No conflicts detected");
+	}
+
+	private boolean isTimeConflict(String newStart, String newEnd, String existingStart, String existingEnd, Context context) {
+		context.getLogger().log("isTimeConflict");
+
+		int newStartMinutes = timeToMinutes(newStart, context);
+		int newEndMinutes = timeToMinutes(newEnd, context);
+		int existingStartMinutes = timeToMinutes(existingStart, context);
+		int existingEndMinutes = timeToMinutes(existingEnd, context);
+
+		return (newStartMinutes < existingEndMinutes) && (newEndMinutes > existingStartMinutes);
+	}
+
+	private int timeToMinutes(String time, Context context) {
+		context.getLogger().log("timeToMinutes");
+
+		String[] parts = time.split(":");
+		int hours = Integer.parseInt(parts[0]);
+		int minutes = Integer.parseInt(parts[1]);
+
+		return hours * 60 + minutes;
+	}
+
 
 	private Map<String, Object> reservationsGetHandler(Context context){
 
