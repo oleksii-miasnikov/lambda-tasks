@@ -290,7 +290,7 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 			}
 
 			response.put("statusCode", 200);
-			response.put("body", items);
+			response.put("body", Map.of("tables", items));
 
 		} catch (Exception exception) {
 			response.put("statusCode", 400);
@@ -304,14 +304,6 @@ public class ApiHandler implements RequestHandler<APIGatewayProxyRequestEvent, A
 
 		context.getLogger().log("reservationsPost started");
 		Map<String, Object> response = new HashMap<>();
-		/*
-		 "tableNumber": // int, number of the table
-         "clientName": //string
-         "phoneNumber": //string
-         "date": // string in yyyy-MM-dd format
-         "slotTimeStart": // string in "HH:MM" format, like "13:00",
-         "slotTimeEnd": // string in "HH:MM" format, like "15:00"
-		 */
 
 		String tableNumber = String.valueOf(body.get("tableNumber"));
 		String clientName = (String) body.get("clientName");
